@@ -1,0 +1,66 @@
+
+# Stage 1: Compile the planner
+Bootstrap: docker
+From: ubuntu:kinetic
+Stage: build
+
+%files
+    .
+
+%post
+    ## Install all necessary dependencies.
+    apt-get update
+    apt-get -y install cmake python3 make g++
+
+    ## Build the planner
+    ./build.py -j4
+    strip --strip-all builds/release/bin/downward
+
+
+# Stage 2: Run the planner
+Bootstrap: docker
+From: ubuntu:kinetic
+Stage: run
+
+# Copy planner binary and required files from Stage 1.
+%files from build
+    fast-downward.py
+    builds/release/bin/
+    driver
+
+%post
+    ## Install only dependencies for running the planner.
+    apt-get update
+    apt-get -y install python3-minimal
+    ## Remove unnecessary files to keep the image small.
+    rm -rf /var/lib/apt/lists/*
+
+
+# The runscript is called whenever the container is used to solve an instance.
+%runscript
+    DOMAINFILE="$1"
+    PROBLEMFILE="$2"
+    PLANFILE="$3"
+
+    /fast-downward.py \
+        --plan-file "$PLANFILE" \
+        --alias seq-agl-cerberus-novelops-argmax \
+        "$DOMAINFILE" \
+        "$PROBLEMFILE" 
+
+## Define meta data
+%labels
+Name        TFTM
+Description Planner based on the IJCAI 2021 paper The Fewer the Merrier: [Pruning Preferred Operators with Novelty](https://www.ijcai.org/proceedings/2021/0576.pdf).
+Authors     Alex Tuisov <>, Michael Katz <Michael.Katz1@ibm.com>
+License     GPL 3
+Tracks      agile
+SupportsDerivedPredicates                       no
+SupportsUniversallyQuantifiedPreconditions      yes
+SupportsExistentiallyQuantifiedPreconditions    yes
+SupportsUniversallyQuantifiedEffects            yes
+SupportsNegativePreconditions                   yes
+SupportsEqualityPreconditions                   yes
+SupportsInequalityPreconditions                 yes
+SupportsConditionalEffects                      yes
+SupportsImplyPreconditions                      yes
