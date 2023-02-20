@@ -210,6 +210,51 @@ def _get_cerberus_first(**kwargs):
         "--always"]
 
 
+def _get_cerberus_novelty_ops(**kwargs):
+    cutoff = "cutoff_type={cutoff_type}".format(**kwargs)
+    if "cutoff_bound" in kwargs:
+        cutoff = cutoff + ",cutoff_bound={cutoff_bound}".format(**kwargs)
+    return [
+        "--if-unit-cost",
+        "--evaluator",
+        "hlm=lmcount(lm_reasonable_orders_hps(lm_rhw()),pref={pref})".format(**kwargs),
+        "--evaluator", 
+        "hrb=RB(dag={dag}, extract_plan=true)".format(**kwargs),
+        "--evaluator", 
+        "hn=novelty(eval=hrb, type=separate_both, pref=true, %s)" % cutoff,
+        "--search", """iterated([
+                         lazy(open=alt([tiebreaking([hn, hrb]), single(hn,pref_only=true), single(hlm), single(hlm,pref_only=true)], boost=1000),preferred=[hrb,hlm]),
+                         lazy_wastar([hrb,hlm],preferred=[hrb,hlm],w=5),
+                         lazy_wastar([hrb,hlm],preferred=[hrb,hlm],w=3),
+                         lazy_wastar([hrb,hlm],preferred=[hrb,hlm],w=2),
+                         lazy_wastar([hrb,hlm],preferred=[hrb,hlm],w=1)
+                         ],repeat_last=true,continue_on_fail=true)""",
+        "--if-non-unit-cost",
+        "--evaluator",
+        "hlm1=lmcount(lm_reasonable_orders_hps(lm_rhw()),transform=adapt_costs(one),pref={pref})".format(**kwargs),
+        "--evaluator", 
+        "hrb1=RB(dag={dag}, extract_plan=true, transform=adapt_costs(one))".format(**kwargs),
+        "--evaluator",
+        "hn=novelty(eval=hrb, type=separate_both, pref=true, %s)" % cutoff,
+        "--evaluator",
+        "hlm2=lmcount(lm_reasonable_orders_hps(lm_rhw()),transform=adapt_costs(plusone),pref={pref})".format(**kwargs),
+        "--evaluator", 
+        "hrb2=RB(dag={dag}, extract_plan=true, transform=adapt_costs(plusone))".format(**kwargs),
+        "--search", """iterated([
+                         lazy(open=alt([tiebreaking([hn, hrb1]), single(hn,pref_only=true), single(hlm1), single(hlm1,pref_only=true)], boost=1000), preferred=[hrb1,hlm1],
+                                     cost_type=one,reopen_closed=false),
+                         lazy_greedy([hrb2,hlm2],preferred=[hrb2,hlm2],
+                                     reopen_closed=false),
+                         lazy_wastar([hrb2,hlm2],preferred=[hrb2,hlm2],w=5),
+                         lazy_wastar([hrb2,hlm2],preferred=[hrb2,hlm2],w=3),
+                         lazy_wastar([hrb2,hlm2],preferred=[hrb2,hlm2],w=2),
+                         lazy_wastar([hrb2,hlm2],preferred=[hrb2,hlm2],w=1)
+                         ],repeat_last=true,continue_on_fail=true)""",
+        # Append --always to be on the safe side if we want to append
+        # additional options later.
+        "--always"]
+
+
 def _get_cerberus_novelty_ops_first(**kwargs):
     cutoff = "cutoff_type={cutoff_type}".format(**kwargs)
     if "cutoff_bound" in kwargs:
@@ -245,7 +290,7 @@ def _get_new_cerberus_first(**kwargs):
         "--evaluator", 
         "hrb=RB(dag={dag}, extract_plan=true)".format(**kwargs),
         "--evaluator", 
-        "hn=novelty(evals=[hrb], type=separate_both)",
+        "hn=novelty(eval=hrb, type=separate_both)",
         "--search", """lazy(open=alt([tiebreaking([hn, hrb]), single(hrb,pref_only=true), single(hlm), single(hlm,pref_only=true)], boost=1000),preferred=[hrb,hlm])""",
         "--if-non-unit-cost",
         "--evaluator",
@@ -253,7 +298,7 @@ def _get_new_cerberus_first(**kwargs):
         "--evaluator", 
         "hrb=RB(dag={dag}, extract_plan=true, transform=adapt_costs(one))".format(**kwargs),
         "--evaluator", 
-        "hn=novelty(evals=[hrb], type=separate_both)",
+        "hn=novelty(eval=hrb, type=separate_both)",
         "--search", """lazy(open=alt([tiebreaking([hn, hrb]), single(hrb,pref_only=true), single(hlm), single(hlm,pref_only=true)], boost=1000), preferred=[hrb,hlm],
                                      cost_type=one,reopen_closed=false)""",
         "--always"]
@@ -267,6 +312,8 @@ ALIASES["seq-sat-cerberus-gl-2018"] = _get_cerberus(pref="true", dag="greedy_lev
 
 ALIASES["seq-agl-cerberus-novelops-argmax"] = _get_cerberus_novelty_ops_first(pref="true", dag="from_coloring", cutoff_type="argmax")
 ALIASES["seq-agl-cerberus-novelops-co1"] = _get_cerberus_novelty_ops_first(pref="true", dag="from_coloring", cutoff_type="all_ordered", cutoff_bound="1")
+ALIASES["seq-sat-cerberus-novelops-argmax"] = _get_cerberus_novelty_ops(pref="true", dag="from_coloring", cutoff_type="argmax")
+ALIASES["seq-sat-cerberus-novelops-co1"] = _get_cerberus_novelty_ops(pref="true", dag="from_coloring", cutoff_type="all_ordered", cutoff_bound="1")
 
 ALIASES["seq-agl-cerberus-new"] = _get_new_cerberus_first(pref="true", dag="from_coloring")
 

@@ -45,7 +45,7 @@ Stage: run
     /fast-downward.py \
         --plan-file "$PLANFILE" \
         --transform-task preprocess \
-        --alias seq-agl-cerberus-novelops-argmax \
+        --alias seq-agl-cerberus-novelops-co1 \
         "$DOMAINFILE" \
         "$PROBLEMFILE" 
 
