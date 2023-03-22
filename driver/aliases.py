@@ -235,7 +235,7 @@ def _get_cerberus_novelty_ops(**kwargs):
         "--evaluator", 
         "hrb1=RB(dag={dag}, extract_plan=true, transform=adapt_costs(one))".format(**kwargs),
         "--evaluator",
-        "hn=novelty(eval=hrb, type=separate_both, pref=true, %s)" % cutoff,
+        "hn=novelty(eval=hrb1, type=separate_both, pref=true, %s)" % cutoff,
         "--evaluator",
         "hlm2=lmcount(lm_reasonable_orders_hps(lm_rhw()),transform=adapt_costs(plusone),pref={pref})".format(**kwargs),
         "--evaluator", 

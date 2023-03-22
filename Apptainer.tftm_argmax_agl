@@ -44,14 +44,13 @@ Stage: run
 
     /fast-downward.py \
         --plan-file "$PLANFILE" \
-        --transform-task preprocess \
         --alias seq-agl-cerberus-novelops-argmax \
         "$DOMAINFILE" \
         "$PROBLEMFILE" 
 
 ## Define meta data
 %labels
-Name        TFTM
+Name        TFTM1
 Description Planner based on the IJCAI 2021 paper The Fewer the Merrier: [Pruning Preferred Operators with Novelty](https://www.ijcai.org/proceedings/2021/0576.pdf).
 Authors     Alex Tuisov <Queldelan@gmail.com>, Michael Katz <Michael.Katz1@ibm.com>
 License     GPL 3
